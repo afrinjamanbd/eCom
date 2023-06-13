@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<table class="table">
+    <form method="post">
+        {% csrf_token %} 
+        <button class="btn btn-primary">Checkout</button>
+    </form>
+    <thead>
+      <tr>
+        <th scope="col">Products</th>
+        <th scope="col">Name</th>
+        <th scope="col">Product Detail</th>
+        <th scope="col">Price</th>
+        <th scope="col"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for data in data %}
+      <tr>
+        <td><img src="{{data.image.url}}" alt="product image" width="100" ></td>
+        <td>{{ data.name }}</td>
+        <td>{{ data.description }}</td>
+        <td>{{ data.price }}</td>
+        <td><button class="btn btn-primary" onclick="removeItem('{{ data.id }}')">remove</button></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+ 
+  <script>
+
+    //Get a Coockie by name
+    function getCookie(cName) {
+      const name = cName + "=";
+      const cDecoded = decodeURIComponent(document.cookie);
+      const cArr = cDecoded .split('; ');
+      let res;
+      cArr.forEach(val => {
+          if (val.indexOf(name) === 0) res = val.substring(name.length);
+      })
+      return res;
+    }
+
+    // Set a Cookie
+    function setCookie(cName, cValue, expDays) {
+          let date = new Date();
+          date.setTime(date.getTime() + (expDays * 24 * 60 * 60 * 1000));
+          const expires = "expires=" + date.toUTCString();
+          document.cookie = cName + "=" + cValue + "; " + expires + "; path=/";
+    }
+
+    // Removes product id from selectedItem coockies
+    function removeItem(data){
+        var itemsSaved = getCookie('selectedItem')
+        removeItemlist = itemsSaved.replaceAll(data,'')
+        setCookie('selectedItem', removeItemlist, 1);
+        location.reload();
+    }
+
+
+  </script>
+{% endblock  %}

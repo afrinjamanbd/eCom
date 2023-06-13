@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block content %}
+    <h2>Hello ! {{user.username}}</h2>
+    <div class="card d-flex d-flex justify-content-center p-2" style="width: 18rem;">
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                <h5 class="card-title">Update Info</h5> 
+                <label for="fname">First name:</label>
+                <input type="text" id="fname" name="fname" placeholder="{{user.first_name}}"><br><br>
+                <label for="lname">Last name:</label>
+                <input type="text" id="lname"  name="lname" placeholder="{{user.last_name}}"><br><br>
+                <button type="submit" class="btn btn-primary">Update</button>
+            </form>
+        </div>
+    </div>
+{% endblock  %}

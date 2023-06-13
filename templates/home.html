@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% block content %}   
+  <table class="table">
+    <thead>
+      <tr>
+        <th scope="col">Products</th>
+        <th scope="col">Name</th>
+        <th scope="col">Product Detail</th>
+        <th scope="col">Price</th>
+        <th scope="col">Stck Status</th>
+        <th scope="col">View Detail</th>
+        <th scope="col">Add to cart</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for data in page %}
+      <tr>
+        <td><img src="{{data.image.url}}" alt="product image" width="100" ></td>
+        <td>{{ data.name }}</td>
+        <td>{{ data.description }}</td>
+        <td>{{ data.price }}</td>
+        <td>{{ data.stock_status }}</td>
+        <td><button class="btn btn-primary">view</button></td>
+        <td><button class="btn btn-primary" onclick="addToCart('{{ data.id }}')">add</button></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <div class="container">
+    <div class="row my-5">
+      <div class="col-md-4 offset-md-3">
+        <p>Page {{page.number}}/{{page.paginator.num_pages}}</p>
+        <nav aria-label="...">
+          <ul class="pagination">
+            <li class="page-item">
+              {% if page.has_previous%}
+              <a class="page-link" href="{% url 'home' %?page={{ page.previous_page_number }}}">Previous</a>
+              {% endif %}
+            </li>
+            <li class="page-item"><a class="page-link" href="#">1</a></li>
+            <li class="page-item active" aria-current="page">
+              <a class="page-link" href="#">2</a>
+            </li>
+            <li class="page-item"><a class="page-link" href="#">3</a></li>
+            <li class="page-item">
+              {% if page.has_next %}
+              <a class="page-link" href="{% url 'home' %?page={{ page.next_page_number }}}">Next</a>
+              {% endif %}
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </div>
+  </div>
+<script>
+
+  var list = [];
+
+  //Get a Coockie by name
+  function getCookie(cName) {
+    const name = cName + "=";
+    const cDecoded = decodeURIComponent(document.cookie); //to be careful
+    const cArr = cDecoded .split('; ');
+    let res;
+    cArr.forEach(val => {
+        if (val.indexOf(name) === 0) res = val.substring(name.length);
+    })
+    return res;
+  }
+
+  var itemsSaved = getCookie('selectedItem')
+  list.push(itemsSaved)
+  console.log(itemsSaved)
+
+  // Set a Cookie
+  function setCookie(cName, cValue, expDays) {
+          let date = new Date();
+          date.setTime(date.getTime() + (expDays * 24 * 60 * 60 * 1000));
+          const expires = "expires=" + date.toUTCString();
+          document.cookie = cName + "=" + cValue + "; " + expires + "; path=/";
+  }
+
+  // Add product id to selectedItem coockies
+  function addToCart(data) {
+    list.push(data)
+    items = list.join("").toString()
+    setCookie('selectedItem', items, 1);
+  }
+</script>
+{% endblock  %}
