@@ -24,14 +24,15 @@ urlpatterns = [
     path('',views.HomePage,name='home'),
     path('signup',views.SignupPage,name='signup'),
     path('login/',views.LoginPage,name='login'),
-    path('loginapi/',views.LoginApi,name='loginapi'),
-    path('logoutapi/',views.LogoutApi,name='logoutapi'),
     path('home/',views.HomePage,name='home'),
     path('cart/',views.Cart,name='cart'),
     path('checkout/',views.Checkout,name='checkout'),
     path('profile/',views.Profile,name='profile'),
     path('logout/',views.LogoutPage,name='logout'),
+    
     path('productapi/',views.ProductApi,name='productapi'),
+    path('loginapi/',views.LoginApi,name='loginapi'),
+    path('logoutapi/',views.LogoutApi,name='logoutapi'),
 
     path("thirdparty", csrf_exempt(GraphQLView.as_view(graphiql=True))),
     path("productsgraphqlapi", csrf_exempt(GraphQLView.as_view(graphiql=True, schema=schema))),
