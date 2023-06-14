@@ -18,14 +18,36 @@ class AuthMutation(graphene.ObjectType):
 class ProductType(DjangoObjectType):
    class Meta:
       model = ProductTable
-      field = ("id","name", "price","description","total_peice", "stock_status", "image")
+      field = ("id","name", "price","description","total_peice", "image")
 
 
-class Query(UserQuery, MeQuery, graphene.ObjectType):
-    all_products = graphene.List(ProductType)
+class Query(graphene.ObjectType):
+    # Add the first and skip parameters
+    products = graphene.List(
+        ProductType,
+        search=graphene.String(),
+        first=graphene.Int(),
+        skip=graphene.Int(),
+    )
 
-    def reolve_all_products(root, info):
-      return ProductTable.objects.all()
+    # Use them to slice the Django queryset
+    def resolve_products(self, info, search=None, first=None, skip=None, **kwargs):
+        qs = ProductTable.objects.all().filter(stock_status='available')
+
+        if search:
+            filter = (
+                Q(url__icontains=search) |
+                Q(description__icontains=search)
+            )
+            qs = qs.filter(filter)
+
+        if skip:
+            qs = qs[skip:]
+
+        if first:
+            qs = qs[:first]
+
+        return qs
 
 
 class Mutation(AuthMutation, graphene.ObjectType):

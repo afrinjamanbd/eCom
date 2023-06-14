@@ -39,11 +39,12 @@ Urls for third party user to retrive graphql json response using jwt
 --------------------------------------------------------------------
 1. `http://127.0.0.1:8000/productsgraphqlapi` : For third party user to see product list and purchase item'
 {
-  allProducts{
-    id
-    name
-    price
-    description
+  products(first:2,skip:2){
+    id,
+    name,
+    description,
+    image,
+    stockStatus
   }
 }
 2. `http://127.0.0.1:8000/thirdparty` : For third party user login, logout, change password, update user info
