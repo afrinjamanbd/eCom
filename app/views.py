@@ -6,9 +6,14 @@ from django.contrib.auth.decorators import login_required
 from .models import ProductTable
 from rest_framework.parsers import JSONParser
 from django.http.response import JsonResponse
-from app.serializers import ProductSerializer
+from app.serializers import ProductSerializer, UserSerializer
 from django.views.decorators.csrf import csrf_exempt
 from django.core.paginator import Paginator
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.exceptions import AuthenticationFailed
+import jwt, datetime
+
 
 # Create your views here.
 User = get_user_model()
@@ -86,72 +91,6 @@ def Checkout(request):
     return render (request,'orderpage.html',context)
 
 
-# API ProductApi : Third Party Product detail and purchase
-@login_required(login_url='loginapi')
-@csrf_exempt
-def ProductApi(request):
-    
-    # returns json data for all the products 
-    if request.method == 'GET':
-        product = ProductTable.objects.all()
-        productsSerializer = ProductSerializer(product,many=True)
-        return JsonResponse(productsSerializer.data,safe=False)
-
-    # gets json data from request body for selected products 
-    elif request.method == 'POST':
-        productData = JSONParser().parse(request)
-        productsSerializer = ProductSerializer(data = productData)
-
-        if productsSerializer.is_valid():
-            try:
-                # makes payment 
-                result = gateway.transaction.sale({
-                    "amount" : request.form["amount"],
-                    "payment_method_nonce" : request.form["payment_method_nonce"],
-                    "device_data": request.form["device_data"],
-                    "order_id" : "Mapped to PayPal Invoice Number",
-                    "options" : {
-                        "submit_for_settlement": True,
-                        "paypal": {
-                            "custom_field" : "PayPal custom field",
-                            "description" : "Description for PayPal email receipt",
-                    },
-                    },
-                })
-                if result.is_success:
-                    "Success ID: ".format(result.transaction.id)
-                    ## update stock
-                    return JsonResponse('Thanks for shopping',safe = False)
-                else:
-                    format(result.message)
-                    return JsonResponse('Error Occured during payment ' ,safe = False)
-            except Exception as e:
-                return JsonResponse('Error Occured : ' + e,safe = False)
-
-        return JsonResponse('Request Failed',safe = False)
-     
-
-# API LoginApi : Third Party Login 
-@csrf_exempt
-def LoginApi(request):
-    if request.method=='POST':
-        username=request.POST.get('username')
-        pass1=request.POST.get('pass')
-        user=authenticate(request,username=username,password=pass1)
-        if user is not None:
-            login(request,user)
-            return JsonResponse('Logged in',safe = False)
-        else:
-            return JsonResponse('Request Failed',safe = False)
-    return JsonResponse('Please Log in First',safe = False)
-
-
-# API LogoutApi : Third Party Logout 
-def LogoutApi(request):
-    logout(request)
-    return JsonResponse('Logged out',safe = False)
-
-
 # User Signup : User SIgnup
 def SignupPage(request):
     if request.method=='POST':
@@ -186,3 +125,118 @@ def LoginPage(request):
 def LogoutPage(request):
     logout(request)
     return redirect('login')
+
+
+# API RegisterView : Third Party Register
+class RegisterView(APIView):
+    def post(self, request):
+        serializer = UserSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+
+# API LoginView : Third Party Login 
+class LoginView(APIView):
+    def post(self, request):
+        username = request.data['username']
+        password = request.data['password']
+
+        user = User.objects.filter(username=username).first()
+
+        if user is None:
+            raise AuthenticationFailed('User not found!')
+
+        if not user.check_password(password):
+            raise AuthenticationFailed('Incorrect password!')
+
+        payload = {
+            'id': user.id,
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=60),
+            'iat': datetime.datetime.utcnow()
+        }
+
+        token = jwt.encode(payload, 'secret', algorithm='HS256').decode('utf-8')
+
+        response = Response()
+
+        response.set_cookie(key='jwt', value=token, httponly=True)
+        response.data = {
+            'jwt': token
+        }
+        return response
+
+
+# API ProductApi : Third Party Product detail and purchase
+class ProductApi(APIView):
+
+    def get(self, request):
+        token = request.COOKIES.get('jwt')
+
+        if not token:
+            raise AuthenticationFailed('Unauthenticated!')
+
+        try:
+            payload = jwt.decode(token, 'secret', algorithm=['HS256'])
+        except jwt.ExpiredSignatureError:
+            raise AuthenticationFailed('Unauthenticated!')
+
+        product = ProductTable.objects.all()
+        productsSerializer = ProductSerializer(product,many=True)
+        # user = User.objects.filter(id=payload['id']).first()
+        # serializer = UserSerializer(user)
+        return Response(productsSerializer.data)
+    
+    # post json data from request body for purchase selected products 
+    def post(self, request): 
+        token = request.COOKIES.get('jwt')
+
+        if not token:
+            raise AuthenticationFailed('Unauthenticated!')
+
+        try:
+            payload = jwt.decode(token, 'secret', algorithm=['HS256'])
+        except jwt.ExpiredSignatureError:
+            raise AuthenticationFailed('Unauthenticated!')
+
+        productData = JSONParser().parse(request)
+        productsSerializer = ProductSerializer(data = productData)
+
+        if productsSerializer.is_valid():
+            try:
+                # makes payment 
+                result = gateway.transaction.sale({
+                    "amount" : request.form["amount"],
+                    "payment_method_nonce" : request.form["payment_method_nonce"],
+                    "device_data": request.form["device_data"],
+                    "order_id" : "Mapped to PayPal Invoice Number",
+                    "options" : {
+                        "submit_for_settlement": True,
+                        "paypal": {
+                            "custom_field" : "PayPal custom field",
+                            "description" : "Description for PayPal email receipt",
+                    },
+                    },
+                })
+                if result.is_success:
+                    "Success ID: ".format(result.transaction.id)
+                    ## update stock
+                    return JsonResponse('Thanks for shopping',safe = False)
+                else:
+                    format(result.message)
+                    return JsonResponse('Error Occured during payment ' ,safe = False)
+            except Exception as e:
+                return JsonResponse('Error Occured : ' + e,safe = False)
+
+        return JsonResponse('Request Failed',safe = False)
+
+
+# API LogoutApi : Third Party Logout 
+class LogoutView(APIView):
+    def post(self, request):
+        response = Response()
+        response.delete_cookie('jwt')
+        response.data = {
+            'message': 'success'
+        }
+        return response

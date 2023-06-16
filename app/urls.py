@@ -19,8 +19,11 @@ from django.urls import path
 from . import views
 from app.schema import schema
 from graphene_django.views import GraphQLView
+from .views import RegisterView, LoginView, ProductApi, LogoutView
+
 
 urlpatterns = [
+    #website user urls
     path('',views.HomePage,name='home'),
     path('signup',views.SignupPage,name='signup'),
     path('login/',views.LoginPage,name='login'),
@@ -30,10 +33,13 @@ urlpatterns = [
     path('profile/',views.Profile,name='profile'),
     path('logout/',views.LogoutPage,name='logout'),
     
-    path('productapi/',views.ProductApi,name='productapi'),
-    path('loginapi/',views.LoginApi,name='loginapi'),
-    path('logoutapi/',views.LogoutApi,name='logoutapi'),
+    # thrid pary rest api urls
+    path('productapi/',ProductApi.as_view()),
+    path('loginapi/',LoginView.as_view()),
+    path('logoutapi/',LogoutView.as_view()),
+    path('registerx', RegisterView.as_view()),
 
+    #third party graphql api urls
     path("thirdparty", csrf_exempt(GraphQLView.as_view(graphiql=True))),
     path("productsgraphqlapi", csrf_exempt(GraphQLView.as_view(graphiql=True, schema=schema))),
 ]

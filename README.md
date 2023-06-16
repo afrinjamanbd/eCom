@@ -32,7 +32,8 @@ Urls for third party user to retrive rest api json response
 -----------------------------------------------------------
 1. `http://127.0.0.1:8000/loginapi` : For third party user login
 2. `http://127.0.0.1:8000/logout` : For third party user logout
-3. `http://127.0.0.1:8000/productapi` : For third party user to see product list and purchase item
+3. `http://127.0.0.1:8000/register` : For third party user signup
+4. `http://127.0.0.1:8000/productapi` : For third party user to see product list and purchase item
 
 
 Urls for third party user to retrive graphql json response using jwt
@@ -61,4 +62,10 @@ mutation{
   }
 }
 
+
+Urls for Admin with view
+------------------------
+1. `http://127.0.0.1:8000/admin` : For admin usage, add delete update product
+  username: "admin"
+  password: "admin"
 
